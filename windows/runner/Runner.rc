@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.group37" "\0"
+            VALUE "CompanyName", "com.alu" "\0"
             VALUE "FileDescription", "alu_connect" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "alu_connect" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.group37. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.alu. All rights reserved." "\0"
             VALUE "OriginalFilename", "alu_connect.exe" "\0"
             VALUE "ProductName", "alu_connect" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
