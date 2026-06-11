@@ -1,121 +1,234 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'constants/colors.dart';
+import 'providers/auth_provider.dart';
+import 'providers/campus_pulse_provider.dart';
+import 'providers/chat_provider.dart';
+import 'providers/community_provider.dart';
+import 'providers/feed_provider.dart';
+import 'providers/feedback_provider.dart';
+import 'providers/rsvp_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/skill_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/campus_pulse/campus_pulse_screen.dart';
+import 'screens/chat/chat_detail_screen.dart';
+import 'screens/chat/chats_screen.dart';
+import 'screens/communities/communities_screen.dart';
+import 'screens/communities/community_detail_screen.dart';
+import 'screens/explore/explore_screen.dart';
+import 'screens/feedback/feedback_analytics_screen.dart';
+import 'screens/feedback/feedback_form_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/home/opportunity_detail_screen.dart';
+import 'screens/onboarding/interests_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/post/create_post_screen.dart';
+import 'screens/profile/my_rsvps_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/profile/account_settings_screen.dart';
+import 'screens/profile/notifications_screen.dart';
+import 'screens/profile/help_support_screen.dart';
+import 'screens/skills/offer_skill_screen.dart';
+import 'screens/skills/skill_detail_screen.dart';
+import 'screens/skills/skills_marketplace_screen.dart';
+import 'services/database_service.dart';
+import 'services/preferences_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await PreferencesService.create();
+  final db = DatabaseService();
+  runApp(MyApp(prefs: prefs, db: db));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final PreferencesService prefs;
+  final DatabaseService db;
 
-  // This widget is the root of your application.
+  const MyApp({super.key, required this.prefs, required this.db});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => RsvpProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => FeedProvider(db)),
+        ChangeNotifierProvider(create: (_) => CommunityProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => ChatProvider(db)),
+        ChangeNotifierProvider(create: (_) => FeedbackProvider(db)),
+        ChangeNotifierProvider(create: (_) => SkillProvider(db)),
+        ChangeNotifierProvider(create: (_) => CampusPulseProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        Provider<PreferencesService>.value(value: prefs),
+      ],
+      child: MaterialApp(
+        title: 'ALU Connect',
+        debugShowCheckedModeBanner: false,
+        theme: _buildTheme(),
+        initialRoute: prefs.isOnboardingDone
+            ? (prefs.userJson != null ? '/home' : '/login')
+            : '/onboarding',
+        routes: {
+          '/onboarding': (_) => const OnboardingScreen(),
+          '/interests': (_) => const InterestsScreen(),
+          '/login': (_) => const LoginScreen(),
+          '/home': (_) => const HomeScreen(),
+          '/explore': (_) => const ExploreScreen(),
+          '/communities': (_) => const CommunitiesScreen(),
+          '/create-post': (_) => const CreatePostScreen(),
+          '/campus-pulse': (_) => const CampusPulseScreen(),
+          '/profile': (_) => const ProfileScreen(),
+          '/my-rsvps': (_) => const MyRsvpsScreen(),
+          '/skills': (_) => const SkillsMarketplaceScreen(),
+          '/offer-skill': (_) => const OfferSkillScreen(),
+          '/chats': (_) => const ChatsScreen(),
+          '/account': (_) => const AccountSettingsScreen(),
+          '/notifications': (_) => const NotificationsScreen(),
+          '/help-support': (_) => const HelpSupportScreen(),
+        },
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/opportunity-detail':
+              return MaterialPageRoute(
+                builder: (_) =>
+                    OpportunityDetailScreen(id: settings.arguments as String),
+              );
+            case '/community-detail':
+              return MaterialPageRoute(
+                builder: (_) =>
+                    CommunityDetailScreen(id: settings.arguments as String),
+              );
+            case '/chat-detail':
+              return MaterialPageRoute(
+                builder: (_) =>
+                    ChatDetailScreen(threadId: settings.arguments as String),
+              );
+            case '/feedback-form':
+              return MaterialPageRoute(
+                builder: (_) =>
+                    FeedbackFormScreen(eventId: settings.arguments as String),
+              );
+            case '/feedback-analytics':
+              return MaterialPageRoute(
+                builder: (_) => FeedbackAnalyticsScreen(
+                    eventId: settings.arguments as String),
+              );
+            case '/skill-detail':
+              return MaterialPageRoute(
+                builder: (_) =>
+                    SkillDetailScreen(skillId: settings.arguments as String),
+              );
+            default:
+              return null;
+          }
+        },
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+  ThemeData _buildTheme() {
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        secondary: AppColors.accent,
+        surface: AppColors.surface,
+        onPrimary: AppColors.white,
+        onSurface: AppColors.darkText,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    );
+    return base.copyWith(
+      textTheme: GoogleFonts.poppinsTextTheme(base.textTheme),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.darkText,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.darkText,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: GoogleFonts.poppins(
+              fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: GoogleFonts.poppins(
+              fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle:
+            GoogleFonts.poppins(color: AppColors.subtleText, fontSize: 14),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFEEEEEE)),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surface,
+        selectedColor: AppColors.primary,
+        labelStyle: GoogleFonts.poppins(
+            fontSize: 12, fontWeight: FontWeight.w500),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.darkText,
+        contentTextStyle:
+            GoogleFonts.poppins(color: AppColors.white),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        behavior: SnackBarBehavior.floating,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.white,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.subtleText,
+        elevation: 8,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
